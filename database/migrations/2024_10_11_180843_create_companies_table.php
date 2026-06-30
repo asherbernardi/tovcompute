@@ -14,11 +14,11 @@ return new class extends Migration
         Schema::create('company', function (Blueprint $table) {
             $table->id();
             $table->string("name");
-            $table->integer("ein");
+            $table->integer("ein")->nullable();
             $table->integer("secID");
             $table->string("ticker");
-            $table->integer("formed");
-            $table->string("list");
+            $table->integer("formed")->nullable();
+            $table->string("list")->nullable();
             $table->integer("updated");            
         });
     }

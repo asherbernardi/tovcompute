@@ -7,9 +7,11 @@ use Illuminate\Html\FormFacade;
 use Illuminate\Support\Facades\Response;
 use App\Models\Company;
 use App\Models\Charity;
-use App\Models\ListModel;
+use App\Models\CompanyGrouping;
 
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class CompanyController extends Controller
 {
@@ -28,20 +30,20 @@ class CompanyController extends Controller
         $sortDir = $request->input('sort_dir', 'asc'); // Default ascending
         $selectedList = $request->input('list_id'); // Get selected list from dropdown
 
-        // Fetch all lists for the dropdown
-        $lists = ListModel::all();
+        // Fetch all groupings for the dropdown
+        $groupings = CompanyGrouping::all();
 
-        $companies = Company::select('company.*', 'list.name as list_name')
-            ->leftJoin('list_associate', 'company.id', '=', 'list_associate.company_id')
-            ->leftJoin('list', 'list_associate.list_id', '=', 'list.id')
+        $companies = Company::select('company.*', 'company_groupings.name as list_name')
+            ->leftJoin('company_grouping_associate', 'company.id', '=', 'company_grouping_associate.company_id')
+            ->leftJoin('company_groupings', 'company_grouping_associate.company_grouping_id', '=', 'company_groupings.id')
             ->when($keyword, function ($query, $keyword) {
                 return $query->where('company.name', 'like', "%{$keyword}%")
                             ->orWhere('company.ticker', 'like', "%{$keyword}%");
             })
             ->when($selectedList, function ($query, $selectedList) {
-                return $query->where('list_associate.list_id', $selectedList);
+                return $query->where('company_grouping_associate.company_grouping_id', $selectedList);
             })
-            ->orderBy($sortBy === 'list_name' ? 'list.name' : "company.{$sortBy}", $sortDir)
+            ->orderBy($sortBy === 'list_name' ? 'company_groupings.name' : "company.{$sortBy}", $sortDir)
             ->distinct('company.id')->paginate($perPage);
 
         // Preserve all query parameters in pagination links
@@ -53,7 +55,7 @@ class CompanyController extends Controller
             'list_id' => $selectedList
         ]);
 
-        return view('companies.index', compact('companies', 'keyword', 'sortBy', 'sortDir', 'request','lists', 'selectedList'));
+        return view('companies.index', compact('companies', 'keyword', 'sortBy', 'sortDir', 'request', 'groupings', 'selectedList'));
     }
 
 
@@ -367,10 +369,12 @@ class CompanyController extends Controller
 
         try {
             // Fetch JSON data using Laravel's HTTP client
-            $response = Http::get($url);
+            $response = Http::withHeaders([
+                'User-Agent' => 'tovcompute/1.0 ' . config('mail.from.address', 'admin@example.com'),
+            ])->get($url);
 
             if ($response->failed()) {
-                return redirect()->back()->with('error', 'Unable to fetch company data from the API.');
+                return redirect()->route('companies.index')->with('error', 'Unable to fetch company data from the API. Status: ' . $response->status());
             }
 
             // Decode JSON into an array
@@ -414,7 +418,7 @@ class CompanyController extends Controller
         } catch (\Exception $e) {
             // Log the error and return a user-friendly message
             Log::error("Error fetching companies: " . $e->getMessage());
-            return redirect()->back()->with('error', 'An error occurred while fetching company data.');
+            return redirect()->route('companies.index')->with('error', 'An error occurred: ' . $e->getMessage());
         }
     }
 }

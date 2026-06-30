@@ -69,12 +69,23 @@
                         <div class="p-6 mb-5 bg-white border border-gray-200 rounded-lg shadow-sm dark:border-gray-700">
                         <h3 class="text-xl font-medium text-gray-700 mb-2">Updating Charities</h3>
                         <p class="mb-5">This is used when you want to update the list of Charities in the system.  This does not override any existing charities, but it will create new ones if they have changed their names or EINs.  This data comes from Giving Tuesday.</p>
-                        <p class="mb-5">During the seeding of this database, a JSON file was downloaded as an index to the system, which was used to update all of the Charities.  Giving Tuesday has now changed that and split their datasets by 990 form type.  You now also have to have an Amazon AWS account to download the data.</p>
+                        <p class="mb-5">Download the latest 990 Combined DataMart CSV from Giving Tuesday, place it on the server, and enter the path below. The import runs in the background — check <code>storage/logs/charity_import.log</code> for progress.</p>
                         <p class="mb-5"><a href="https://990data.givingtuesday.org/datamarts/?sort=title%3Aasc">https://990data.givingtuesday.org/datamarts/?sort=title%3Aasc</a></p>
-                        <ol class="list-decimal pl-6 mb-4">
-                            <li>Update import_charity_json.py to conform to Giving Tuesday's new standards.</li>
-                            <li>Utilize the script import_charity.py to import the CSV files.  Note it will likely have to be updated to read the fields per 990 form type.</li>
-                        </ol>
+                        <form action="{{ route('charities.import') }}" method="POST">
+                            @csrf
+                            <div class="mb-4">
+                                <label for="csv_path" class="block text-sm font-medium text-gray-700 mb-1">CSV File Path</label>
+                                <input type="text" name="csv_path" id="csv_path"
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-mono"
+                                    placeholder="Leave blank to use default path"
+                                    value="{{ base_path('data_sources/2025_07_10_All_Years_990_990ez_990pf_990n_Combined_DataMart.csv') }}" />
+                                <p class="text-xs text-gray-500 mt-1">Full server path to the 990 Combined DataMart CSV file.</p>
+                            </div>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                Import Charities
+                            </button>
+                        </form>
+                        <p class="text-sm text-gray-500 mt-3">CLI equivalent: <code>php artisan charities:import --csv=/path/to/file.csv</code></p>
                         </div>
 
                         
@@ -87,44 +98,60 @@
 
                         <div class="p-6 mb-5 bg-white border border-gray-200 rounded-lg shadow-sm dark:border-gray-700">
                         <h3 class="text-xl font-medium text-gray-700 mb-2">Updating Basic Giving Information</h3>
-                        <p class="mb-5">This is used when you want to update the basic Giving History in the database.  This step has to be followed first because it contains a link to get to the advanced fields.  This data comes from Giving Tuesday and is technically from the same file as the previous import.</p>
-                        <p class="mb-5">During the seeding of this database, a JSON file was downloaded as an index to the system, which was used to update all of the Charities.  Giving Tuesday has now changed that and split their datasets by 990 form type.  You now also have to have an Amazon AWS account to download the data.</p>
+                        <p class="mb-5">This is used when you want to update the Giving History in the database. This uses the same 990 Combined DataMart CSV as the charity import above — download the latest file from Giving Tuesday and enter its path below. The import runs in the background; check <code>storage/logs/giving_import.log</code> for progress.</p>
                         <p class="mb-5"><a href="https://990data.givingtuesday.org/datamarts/?sort=title%3Aasc">https://990data.givingtuesday.org/datamarts/?sort=title%3Aasc</a></p>
-                        <ol class="list-decimal pl-6 mb-4">
-                            <li>Update import_giving_json.py to conform to Giving Tuesday's new standards.</li>
-                            <li>Utilize the script import_giving_json.py to import the CSV files.  Note it will likely have to be updated to read the fields per 990 form type.</li>
-                            <li>The file attempts to read the following fields and update the database:
-                                <code>obj['EIN'],
-                          obj['TaxYear'],
-                          obj['TaxPeriodBeginDate'],
-                          obj['TaxPeriodEndDate'],
-                          obj['TotalAssetsBkEOY'],
-                          obj['TotalExpensesCY'],
-                          obj['TotalLiabilitiesBkEOY'],
-                          obj['TotalNetAssetsBkEOY'],
-                          obj['TotalRevenueCY'],
-                          obj['URL']</code>
-                            </li>
-                            <li>This file is typically >9GB, so it takes about 24 hours to process.  The script is set to pause for 5 seconds every 30,000 records in order to reduce RAM usage and not cause overflows.</li>
-                            <li>A URL link to an XML file is also included in the file which is loaded into the database.  This URL has extended field information like the Grants Paid and Asset informaiton.</li>
-                        </ol>
+                        <form action="{{ route('giving.import') }}" method="POST">
+                            @csrf
+                            <div class="mb-4">
+                                <label for="giving_csv_path" class="block text-sm font-medium text-gray-700 mb-1">CSV File Path</label>
+                                <input type="text" name="csv_path" id="giving_csv_path"
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-mono"
+                                    placeholder="Leave blank to use default path"
+                                    value="{{ base_path('data_sources/2025_07_10_All_Years_990_990ez_990pf_990n_Combined_DataMart.csv') }}" />
+                                <p class="text-xs text-gray-500 mt-1">Full server path to the 990 Combined DataMart CSV file.</p>
+                            </div>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                Import Giving Data
+                            </button>
+                        </form>
+                        <p class="text-sm text-gray-500 mt-3">CLI equivalent: <code>php artisan giving:import --csv=/path/to/file.csv</code></p>
                         </div>
 
                         <div class="p-6 mb-5 bg-white border border-gray-200 rounded-lg shadow-sm dark:border-gray-700">
                         <h3 class="text-xl font-medium text-gray-700 mb-2">Extracting Extended Giving Information</h3>
-                        <p class="mb-5">This is used when you want to complete the Giving database.  We already have the XML file linked in the database, so this program opens the link, reads the extended information, and updates records accordingly.</p>
-                         <p class="mb-5"><a href="https://990data.givingtuesday.org/datamarts/?sort=title%3Aasc">https://990data.givingtuesday.org/datamarts/?sort=title%3Aasc</a></p>
-                        <ol class="list-decimal pl-6 mb-4">
-                            <li>Update extract_xml_giving.py to conform to Giving Tuesday's new standards.</li>
-                            <li>Utilize the script extract_xml_giving.py to import the data from the linked XML files.  Note it will likely have to be updated to read the fields per 990 form type.</li>
-                            <li>The fields are slightly different on each 990 type.  The file attempts to read the fields from these 990 types:
-                                <code>IRS990,
-                                    IRS990PF,
-                                    IRS990EZ,
-                                    IRS990T
-                                </code>
-                            </li>
-                         </ol>
+                        <p class="mb-5">Fetches each charity's individual IRS XML filing (URLs are stored in the database from the giving import) and fills in detailed financial fields: grants paid, contributions, net assets, revenue, expenses, liabilities, and total assets. No file download required — it pulls live from the IRS via Giving Tuesday. Run this after importing giving data.</p>
+                        <form action="{{ route('giving.extract-xml') }}" method="POST" x-data="{ searchType: 'company' }">
+                            @csrf
+                            <div class="mb-4">
+                                <label for="search_type" class="block text-sm font-medium text-gray-700 mb-1">Scope</label>
+                                <select name="search_type" id="search_type" x-model="searchType"
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                                    <option value="company">Company — all charities under a specific company</option>
+                                    <option value="charity">Charity — a specific charity</option>
+                                    <option value="list">List — all charities in a specific list</option>
+                                    <option value="all_lists">All Lists — every charity in any list</option>
+                                    <option value="all">All — every charity with a URL (very slow)</option>
+                                </select>
+                            </div>
+                            <div class="mb-4" x-show="['company','charity','list'].includes(searchType)">
+                                <label for="criteria" class="block text-sm font-medium text-gray-700 mb-1">ID</label>
+                                <input type="number" name="criteria" id="criteria"
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                                    placeholder="Enter the company, charity, or list ID" />
+                            </div>
+                            <div class="mb-4">
+                                <label for="fields" class="block text-sm font-medium text-gray-700 mb-1">Fields to Extract</label>
+                                <select name="fields" id="fields"
+                                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                                    <option value="all">All — grants, contributions, net assets, revenue, expenses, liabilities, total assets</option>
+                                    <option value="basic">Basic — grants and contributions only</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                Extract XML Giving Data
+                            </button>
+                        </form>
+                        <p class="text-sm text-gray-500 mt-3">CLI equivalent: <code>php artisan giving:extract-xml --search-type=company --criteria=735 --fields=all</code></p>
                         </div>
                     
 

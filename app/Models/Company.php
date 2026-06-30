@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use App\Models\CompanyGrouping;
 Use Carbon\Carbon;
 
 class Company extends Model
@@ -40,6 +41,11 @@ class Company extends Model
     public function charities(): HasMany
     {
         return $this->hasMany(Charity::class,"parent")->orderby("name","asc");
+    }
+
+    public function qualitativeFrameworkScores(): HasMany
+    {
+        return $this->hasMany(QualitativeFrameworkScore::class)->orderBy('created_at', 'desc');
     }
 
     /*
@@ -94,9 +100,9 @@ class Company extends Model
         return $totals;
     }
 
-    public function lists()
+    public function companyGroupings()
     {
-        return $this->belongsToMany(ListModel::class, 'list_associate', 'company_id', 'list_id')
+        return $this->belongsToMany(CompanyGrouping::class, 'company_grouping_associate', 'company_id', 'company_grouping_id')
                     ->withPivot('id');
     }
         
