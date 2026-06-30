@@ -122,6 +122,10 @@ class ScoreController extends Controller
             'summary'                        => 'required|string',
             'red_flags'                      => 'nullable|array',
             'red_flags.*'                    => 'string',
+            'research_duration'              => 'nullable|integer|min:0',
+            'input_tokens'                   => 'nullable|integer|min:0',
+            'output_tokens'                  => 'nullable|integer|min:0',
+            'notes'                          => 'nullable|string',
             'feature_scores'                 => 'required|array|min:1',
             'feature_scores.*.category'      => 'required|string',
             'feature_scores.*.score'         => 'required|numeric|min:0|max:10',
@@ -131,10 +135,14 @@ class ScoreController extends Controller
         ]);
 
         $score = $company->qualitativeFrameworkScores()->create([
-            'source'     => $data['source'],
-            'summary'    => $data['summary'],
-            'red_flags'  => $data['red_flags'] ?? null,
-            'created_at' => time(),
+            'source'            => $data['source'],
+            'summary'           => $data['summary'],
+            'red_flags'         => $data['red_flags'] ?? null,
+            'research_duration' => $data['research_duration'] ?? null,
+            'input_tokens'      => $data['input_tokens'] ?? null,
+            'output_tokens'     => $data['output_tokens'] ?? null,
+            'notes'             => $data['notes'] ?? null,
+            'created_at'        => time(),
         ]);
 
         foreach ($data['feature_scores'] as $fs) {
@@ -189,6 +197,10 @@ class ScoreController extends Controller
             'summary'                        => 'sometimes|string',
             'red_flags'                      => 'nullable|array',
             'red_flags.*'                    => 'string',
+            'research_duration'              => 'nullable|integer|min:0',
+            'input_tokens'                   => 'nullable|integer|min:0',
+            'output_tokens'                  => 'nullable|integer|min:0',
+            'notes'                          => 'nullable|string',
             'feature_scores'                 => 'sometimes|array|min:1',
             'feature_scores.*.category'      => 'required_with:feature_scores|string',
             'feature_scores.*.score'         => 'required_with:feature_scores|numeric|min:0|max:10',
@@ -197,11 +209,18 @@ class ScoreController extends Controller
             'feature_scores.*.evidence.*'    => 'string',
         ]);
 
-        $score->update(array_filter([
-            'source'    => $data['source'] ?? null,
-            'summary'   => $data['summary'] ?? null,
-            'red_flags' => array_key_exists('red_flags', $data) ? $data['red_flags'] : $score->red_flags,
-        ], fn($v) => $v !== null));
+        $updatable = ['source', 'summary', 'research_duration', 'input_tokens', 'output_tokens', 'notes'];
+        $updates = [];
+        foreach ($updatable as $field) {
+            if (array_key_exists($field, $data)) {
+                $updates[$field] = $data[$field];
+            }
+        }
+        // red_flags needs special handling since it's nullable and array_key_exists matters
+        if (array_key_exists('red_flags', $data)) {
+            $updates['red_flags'] = $data['red_flags'];
+        }
+        $score->update($updates);
 
         if (isset($data['feature_scores'])) {
             $score->featureScores()->delete();
