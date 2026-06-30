@@ -17,11 +17,18 @@ class QualitativeFrameworkScore extends Model
         'source',
         'summary',
         'red_flags',
+        'research_duration',
+        'input_tokens',
+        'output_tokens',
+        'notes',
     ];
 
     protected $casts = [
-        'created_at' => 'integer',
-        'red_flags'  => 'array',
+        'created_at'        => 'integer',
+        'red_flags'         => 'array',
+        'research_duration' => 'integer',
+        'input_tokens'      => 'integer',
+        'output_tokens'     => 'integer',
     ];
 
     protected static function booting(): void
