@@ -4,82 +4,59 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Anson Analytics** — A Laravel 11 application for analyzing qualitative factors of investment companies and their associated charitable giving. The app matches companies to charities, tracks financial history, and provides CSV export functionality.
+**tovcompute** (branded "Anson Analytics") is a Laravel 11 application that analyzes qualitative investment factors by tracking companies and their charitable giving. Core workflow: ingest company data → match companies to charities → review/approve matches → analyze giving history.
 
-## Common Commands
+## Commands
 
+### PHP / Laravel
 ```bash
-# Development
-npm run dev           # Start Laravel Mix watcher
-npm run build         # Build frontend assets (production)
-php artisan serve     # Start local dev server
-
-# Testing
-php artisan test                         # Run all tests
-php artisan test --filter=ExampleTest    # Run a single test
-./vendor/bin/phpunit tests/Feature/Auth  # Run a test directory
-
-# Code quality
-./vendor/bin/pint                        # Format PHP code (Laravel Pint)
-
-# Database
-php artisan migrate
-php artisan db:seed
-
-# Laravel Mix asset compilation uses Laravel Mix (not Vite) — run npm run dev/build
+php artisan migrate          # Run database migrations
+php artisan tinker           # Interactive REPL
+vendor/bin/phpunit           # Run all tests
+vendor/bin/phpunit --filter TestName   # Run a single test
+vendor/bin/pint              # Format PHP code (Laravel Pint)
 ```
+
+### Frontend
+```bash
+npm run dev      # Watch and rebuild assets (development)
+npm run build    # Production build
+```
+
+### Database
+- MySQL, database `laravel_db`, user `asher` on localhost:3306
+- Credentials in `.env`
 
 ## Architecture
 
-### Core Domain
-
-The application tracks two primary entities and their relationship:
-
-- **Company** — Investment companies sourced from the SEC API (`fetchCompanies()` in CompanyController). Has `name`, `ein`, `secID`, `ticker`.
-- **Charity** — Charitable organizations with EIN-based identification. Belong to a Company (via `parent` foreign key).
-- **CharityGiving** — Financial history records per charity per tax year (`grants_paid`, `net_assets`, `total_revenue`, etc.).
-- **CharityRecommend** — Join table tracking suggested matches between companies and charities with approval status.
-- **ListModel** — Named groupings of companies (many-to-many via `list_associate` pivot).
-
-### Matching Algorithm
-
-`MatchController` matches companies to charities using:
-1. `filterString()` — strips corporate suffixes (Inc, LLC, Corp, etc.)
-2. Levenshtein distance for string similarity scoring
-3. SOUNDEX SQL function for phonetic matching via `searchName()`
-
-Results land in `charity_recommend` with a `status` and `match` percentage for user approval/disapproval.
-
-### Custom Model Conventions
-
-Most models use a single `updated` timestamp field (Unix format) instead of Laravel's standard `created_at`/`updated_at`:
-```php
-const CREATED_AT = 'updated';
-const UPDATED_AT = 'updated';
-protected $dateFormat = 'U';
+### Data Model
 ```
+Company (ticker, EIN, secID)
+  ├── has many Charity (EIN, parent FK → company.id)
+  │     └── has many CharityGiving (tax_year, grants_paid, net_assets, etc.)
+  └── many-to-many List (via list_associate pivot)
+
+CharityRecommend — links Company + Charity with match% and status (0=pending, 1=confirmed, 2=rejected)
+```
+
+**Important:** The app uses Unix integer timestamps throughout — models map `CREATED_AT`/`UPDATED_AT` to an `updated` column and cast dates with `'U'` format. Laravel's default datetime handling does not apply here.
+
+### Key Controllers & Their Roles
+- **CompanyController** — CRUD, sorting/filtering/searching (1000 records/page), CSV export, SEC API fetch (`company_tickers.json`)
+- **CharityController** — CRUD, company association/disassociation, CSV export; uses HTMX for partial table updates
+- **MatchController** — Matching algorithm: strips legal suffixes (Inc, LLC, Corp…), then applies Levenshtein distance + SOUNDEX for phonetic similarity; writes `CharityRecommend` records
+- **CharityRecommendController** — Approval workflow for recommendations with match ≥ 70%
+- **ListController** — Named lists (max 15-char names) grouping companies
+- **CharityGivingController** — Syncs `charityID` in `charity_giving` by matching EINs
+- **BackupController** — Triggers `spatie/laravel-backup` in the background
 
 ### Frontend Stack
+- **Blade** templates with **Tailwind CSS**, **Alpine.js**, and **HTMX**
+- **Livewire 3** (`AddCharity` component) for reactive UI
+- Assets compiled via **Vite** (primary) with a legacy `webpack.mix.cjs` also present
 
-- **Tailwind CSS** + **Alpine.js** — Styling and lightweight interactivity
-- **HTMX** — Used in `CharityController::index()` (detects `HX-Request` header for partial responses)
-- **Livewire** — `AddCharity` component for interactive charity association
-- **Laravel Mix** — Asset bundling (`webpack.mix.js`), not Vite despite Vite being listed as a dev dependency
-
-### Route Structure
-
-Root `/` redirects to `/companies`. All routes are web routes (no API routes). Most company/list routes are behind `auth` middleware. Key non-resource routes:
-
-```
-GET  /runMatches                          — Run company-charity matching
-GET  /recommendations                     — Review pending matches
-POST /companies/{id}/search-charity       — AJAX charity search (JSON)
-POST /companies/{id}/associate-charity    — Link charity to company
-POST /companies/{id}/export-history       — CSV download
-GET  /companies/fetch                     — Sync companies from SEC API
-POST /charity-giving/sync                 — Sync charityIDs by EIN
-```
-
-### Testing
-
-Uses PHPUnit (not Pest). Tests are in `tests/Unit/` and `tests/Feature/`. Auth tests generated by Breeze are in `tests/Feature/Auth/`. Test environment uses in-memory array drivers for cache, mail, queue, and session.
+### Incomplete / Work-in-Progress Areas
+- `MatchController::saveMatchRecommendation` is commented out — recommendations are computed but not fully persisted
+- `AddCharity` Livewire component has an empty `search()` method stub
+- `ManualController` contains `exec()` calls to run PHP scripts directly — treat carefully
+- Several `CharityGivingController` methods are stubs
