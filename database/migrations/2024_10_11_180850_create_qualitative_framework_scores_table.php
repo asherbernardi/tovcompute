@@ -10,12 +10,15 @@ return new class extends Migration
     {
         Schema::create('qualitative_framework_scores', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('company_id');
-            $table->foreign('company_id')->references('id')->on('company');
+            $table->unsignedBigInteger('company_id')->index();
             $table->integer('created_at');
             $table->string('source');
             $table->text('summary');
             $table->json('red_flags')->nullable();
+        });
+
+        Schema::table('qualitative_framework_scores', function (Blueprint $table) {
+            $table->foreign('company_id')->references('id')->on('company');
         });
     }
 
