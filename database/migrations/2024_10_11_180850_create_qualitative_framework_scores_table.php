@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('qualitative_framework_scores', function (Blueprint $table) {
             $table->id();
-            $table->unsignedInteger('company_id')->index();
+            $table->integer('company_id')->index();
             $table->integer('created_at');
             $table->string('source');
             $table->text('summary');
