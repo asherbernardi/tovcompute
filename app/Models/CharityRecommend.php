@@ -29,17 +29,6 @@ class CharityRecommend extends Model
         'confirm_date' => 'integer',
     ];
 
-    /**
-     * @desc there is just something really gramatically bothersome about using updated_at ...
-     */
-    const CREATED_AT = 'suggested_date';
-    const UPDATED_AT = 'suggested_date';
-    /**
-     * @desc use unix timestamp because your date format is dumb
-     *
-     * **/
-    protected $dateFormat = 'U';
-
     // Relationships
     public function charity()
     {
