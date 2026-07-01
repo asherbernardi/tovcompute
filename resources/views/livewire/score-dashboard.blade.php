@@ -159,13 +159,19 @@
                         <td class="px-3 py-2 text-gray-500 whitespace-nowrap">
                             {{ date('M j, Y', $row['created_at']) }}
                         </td>
-                        <td class="px-3 py-2" @click.stop>
-                            <button @click.stop="$wire.viewScoreDetail({{ $row['company_id'] }})"
+                        <td class="px-3 py-2" x-data="{ loading: false }" @click.stop>
+                            <button @click.stop="loading = true; $wire.viewScoreDetail({{ $row['company_id'] }}).then(() => loading = false)"
                                     title="View score details"
                                     class="text-gray-300 hover:text-blue-500 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg x-show="!loading"
+                                     xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <svg x-show="loading"
+                                     class="h-4 w-4 animate-spin text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                                 </svg>
                             </button>
                         </td>

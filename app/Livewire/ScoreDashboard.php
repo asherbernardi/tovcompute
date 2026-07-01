@@ -6,6 +6,7 @@ use App\Models\QualitativeFrameworkScore;
 use App\Models\ResearchPrompt;
 use App\Models\WeightingPreset;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Renderless;
 use Livewire\Component;
 
 class ScoreDashboard extends Component
@@ -67,6 +68,7 @@ class ScoreDashboard extends Component
         $this->activePresetId = '';
     }
 
+    #[Renderless]
     public function selectCompany(int $companyId, string $ticker): void
     {
         if ($this->selectedCompanyId === $companyId) {
@@ -116,6 +118,7 @@ class ScoreDashboard extends Component
         WeightingPreset::destroy($id);
     }
 
+    #[Renderless]
     public function viewScoreDetail(int $companyId): void
     {
         $company = \App\Models\Company::find($companyId);
