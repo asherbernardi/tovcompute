@@ -404,12 +404,18 @@ class CompanyController extends Controller
                     'updated' => time(), // Current Unix timestamp
                 ];
 
-                $company = Company::where('secID', $companyData['secID'])
-                    ->orWhere('ticker', $companyData['ticker'])
-                    ->first();
+                $bySecId  = Company::where('secID', $companyData['secID'])->first();
+                $byTicker = Company::where('ticker', $companyData['ticker'])->first();
 
-                if ($company) {
-                    $company->update($companyData);
+                if ($bySecId && $byTicker && $bySecId->id !== $byTicker->id) {
+                    // Ticker was reassigned: SEC's secID now belongs to a different company than
+                    // the one we know as that ticker. Trust the ticker-matched record as canonical
+                    // and update it with the new secID; leave the other record's ticker alone.
+                    $byTicker->update($companyData);
+                } elseif ($bySecId) {
+                    $bySecId->update($companyData);
+                } elseif ($byTicker) {
+                    $byTicker->update($companyData);
                 } else {
                     Company::create($companyData);
                 }
