@@ -13,6 +13,8 @@ class QualitativeFrameworkScore extends Model
 
     protected $fillable = [
         'company_id',
+        'prompt_id',
+        'research_run_id',
         'created_at',
         'source',
         'summary',
@@ -48,5 +50,15 @@ class QualitativeFrameworkScore extends Model
     public function featureScores(): HasMany
     {
         return $this->hasMany(FeatureScore::class);
+    }
+
+    public function prompt(): BelongsTo
+    {
+        return $this->belongsTo(ResearchPrompt::class, 'prompt_id');
+    }
+
+    public function researchRun(): BelongsTo
+    {
+        return $this->belongsTo(ResearchRun::class, 'research_run_id');
     }
 }
