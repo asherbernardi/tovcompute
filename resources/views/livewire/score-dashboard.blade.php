@@ -191,6 +191,23 @@
              scores: [],
              idx: 0,
              notesOpen: false,
+             pricing: [
+                 { match: 'claude-opus-4',      input: 15,   output: 75   },
+                 { match: 'claude-sonnet-4',    input: 3,    output: 15   },
+                 { match: 'claude-haiku-4',     input: 0.8,  output: 4    },
+                 { match: 'gpt-4o-mini',        input: 0.15, output: 0.6  },
+                 { match: 'gpt-4o',             input: 2.5,  output: 10   },
+                 { match: 'gpt-4',              input: 10,   output: 30   },
+                 { match: 'o3-mini',            input: 1.1,  output: 4.4  },
+                 { match: 'o1',                 input: 15,   output: 60   },
+                 { match: 'o3',                 input: 10,   output: 40   },
+             ],
+             costFor(source, inputTokens, outputTokens) {
+                 const s = (source || '').toLowerCase();
+                 const tier = this.pricing.find(p => s.includes(p.match));
+                 if (!tier || (!inputTokens && !outputTokens)) return null;
+                 return ((inputTokens * tier.input + outputTokens * tier.output) / 1_000_000).toFixed(2);
+             },
              get current() {
                  return this.scores[this.idx] || { source: '', badge_class: '', date: '', summary: '', red_flags: [], notes: '', research_duration: 0, input_tokens: 0, output_tokens: 0, feature_scores: [] };
              },
@@ -260,6 +277,9 @@
                         <span x-text="Math.round(current.research_duration) + 's'"></span>
                         <span>·</span>
                         <span x-text="current.input_tokens.toLocaleString() + ' in / ' + current.output_tokens.toLocaleString() + ' out tokens'"></span>
+                        <template x-if="costFor(current.source, current.input_tokens, current.output_tokens)">
+                            <span x-text="'· ~$' + costFor(current.source, current.input_tokens, current.output_tokens)"></span>
+                        </template>
                     </div>
 
                     {{-- Summary --}}
