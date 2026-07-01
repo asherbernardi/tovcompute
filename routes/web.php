@@ -9,6 +9,8 @@ use App\Http\Controllers\ManualController;
 use App\Http\Controllers\CharityRecommendController;
 use App\Http\Controllers\CharityGivingController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\ScoreController;
+use App\Http\Controllers\ResearchController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -89,3 +91,11 @@ Route::post('/recommendations/{recommendation}/disapprove', [CharityRecommendCon
 Route::post('/charity-giving/sync', [CharityGivingController::class, 'syncCharityIds'])->name('charity-giving.sync');
 
 Route::post('/backup/run', [BackupController::class, 'run'])->name('backup.run');
+
+Route::redirect('/scores', '/research/scores', 301);
+
+Route::prefix('research')->name('research.')->group(function () {
+    Route::get('/scores',  [ResearchController::class, 'scores'])->name('scores');
+    Route::get('/prompts', [ResearchController::class, 'prompts'])->name('prompts');
+    Route::get('/runs',    [ResearchController::class, 'runs'])->name('runs');
+});

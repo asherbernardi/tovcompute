@@ -30,6 +30,7 @@
             <a href="{{ url('charities') }}" class="hover:text-gray-400">Charities</a>
             <a href="{{ url('lists') }}" class="hover:text-gray-400">Lists</a>
             <a href="{{ url('recommendations') }}" class="hover:text-gray-400">Recommendations</a>
+            <a href="{{ route('research.scores') }}" class="hover:text-gray-400">Research</a>
             <a href="{{ url('manual') }}" class="hover:text-gray-400">Manual</a>
         </nav>
     </div>
