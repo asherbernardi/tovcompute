@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('qualitative_framework_scores', function (Blueprint $table) {
-            // Columns already exist from a partial prior run; just add the missing FK constraint.
-            $table->foreign('research_run_id')->references('id')->on('research_runs')->nullOnDelete();
+            $table->foreignId('prompt_id')->nullable()->constrained('research_prompts')->nullOnDelete();
+            $table->foreignId('research_run_id')->nullable()->constrained('research_runs')->nullOnDelete();
         });
     }
 
