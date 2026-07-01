@@ -404,13 +404,16 @@ class CompanyController extends Controller
                     'updated' => time(), // Current Unix timestamp
                 ];
 
-                // Insert or ignore using Eloquent (equivalent to INSERT IGNORE)
-                Company::updateOrCreate(
-                    ['secID' => $companyData['secID']], // Unique key to check for duplicates
-                    $companyData
-                );
+                $company = Company::where('secID', $companyData['secID'])
+                    ->orWhere('ticker', $companyData['ticker'])
+                    ->first();
 
-                // Log success (optional, replaces echo)
+                if ($company) {
+                    $company->update($companyData);
+                } else {
+                    Company::create($companyData);
+                }
+
                 Log::info("{$companyData['name']} record created or updated successfully.");
             }
 
