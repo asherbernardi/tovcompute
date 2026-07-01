@@ -52,7 +52,7 @@
             <p class="text-sm text-green-700 font-medium">Linked {{ $backfillCount }} score(s) to the selected prompt.</p>
         @else
             <div class="flex items-center gap-3">
-                <select wire:model="backfillPromptId"
+                <select wire:model.live="backfillPromptId"
                         class="border border-amber-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-amber-500 focus:border-amber-500">
                     <option value="">— select prompt —</option>
                     @foreach ($prompts as $prompt)
