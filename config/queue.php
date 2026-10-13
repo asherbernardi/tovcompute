@@ -43,6 +43,17 @@ return [
             'after_commit' => false,
         ],
 
+        // Long-running AI research jobs. retry_after must exceed the longest
+        // job, or the queue hands a still-running job to a second worker.
+        'research' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => 'research',
+            'retry_after' => (int) env('RESEARCH_QUEUE_RETRY_AFTER', 14400),
+            'after_commit' => false,
+        ],
+
         'beanstalkd' => [
             'driver' => 'beanstalkd',
             'host' => env('BEANSTALKD_QUEUE_HOST', 'localhost'),

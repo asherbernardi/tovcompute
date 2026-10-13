@@ -50,6 +50,14 @@ CharityRecommend — links Company + Charity with match% and status (0=pending, 
 - **CharityGivingController** — Syncs `charityID` in `charity_giving` by matching EINs
 - **BackupController** — Triggers `spatie/laravel-backup` in the background
 
+### AI Research Worker
+Research runs (Research → Runs tab) score companies on the qualitative framework using Claude with web search.
+- `StartResearchRun` expands a run into `research_run_items` (one per company), then either dispatches `ResearchCompany` per item (**live** mode, `research` queue connection) or `SubmitResearchBatch` → `PollResearchBatch` (**batch** mode, Message Batches API at 50% off; items needing another turn are resubmitted each round)
+- `App\Services\Research\ResearchAgent` builds requests and handles responses for both modes; `ScoreWriter` saves results as `QualitativeFrameworkScore` + `FeatureScore` rows
+- Models, prices and per-model request settings live in `config/research.php`; the API key is `ANTHROPIC_API_KEY` in `.env`, read via `config('services.anthropic.key')`
+- Workers run as systemd services (`deploy/systemd/`). After deploying code changes, run `php artisan queue:restart` so workers load the new code
+- The `research` queue connection's `retry_after` (4h) must stay above `ResearchCompany::$timeout`
+
 ### Frontend Stack
 - **Blade** templates with **Tailwind CSS**, **Alpine.js**, and **HTMX**
 - **Livewire 3** (`AddCharity` component) for reactive UI

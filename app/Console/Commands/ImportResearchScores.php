@@ -5,6 +5,8 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Company;
 use App\Models\QualitativeFrameworkScore;
+use App\Services\Research\QualitativeFramework;
+use App\Services\Research\ResearchNotesParser;
 use Carbon\Carbon;
 
 class ImportResearchScores extends Command
@@ -15,16 +17,6 @@ class ImportResearchScores extends Command
                             {--dry-run     : Preview what would be imported without writing to DB}';
 
     protected $description = 'Import qualitative framework scores from CSV and MD evidence files';
-
-    private array $categories = [
-        'leadership_character'           => 1,
-        'culture_strength'               => 2,
-        'employee_outcomes'              => 3,
-        'customer_trust'                 => 4,
-        'incentive_pay_equity_alignment' => 5,
-        'operational_excellence'         => 6,
-        'governance_reputation'          => 7,
-    ];
 
     public function handle(): int
     {
@@ -81,8 +73,8 @@ class ImportResearchScores extends Command
             }
 
             $mdContent = $this->loadMdFile($notesDir, $ticker, $record['research_date']);
-            $summary   = $mdContent ? $this->parseSummary($mdContent)              : 'Imported from legacy CSV.';
-            $redFlags  = $this->parseRedFlags($record['red_flags'], $mdContent);
+            $summary   = ResearchNotesParser::summary($mdContent) ?? 'Imported from legacy CSV.';
+            $redFlags  = ResearchNotesParser::redFlags(strtoupper(trim($record['red_flags'])) === 'TRUE', $mdContent);
 
             $this->line("Row {$row}: {$ticker} — {$company->name}" . ($mdContent ? '' : ' (no MD file)'));
 
@@ -99,12 +91,12 @@ class ImportResearchScores extends Command
                     'notes'             => $mdContent,
                 ]);
 
-                foreach ($this->categories as $column => $categoryNumber) {
+                foreach (QualitativeFramework::CATEGORIES as $column => $categoryNumber) {
                     $score->featureScores()->create([
                         'category'   => $column,
                         'score'      => (float) $record[$column],
                         'confidence' => strtoupper(trim($record["{$column}_confidence"])),
-                        'evidence'   => $mdContent ? $this->parseEvidence($mdContent, $categoryNumber) : [],
+                        'evidence'   => ResearchNotesParser::evidence($mdContent, $categoryNumber),
                     ]);
                 }
             }
@@ -138,56 +130,5 @@ class ImportResearchScores extends Command
 
         $this->warn("  No MD file found for {$filename}");
         return null;
-    }
-
-    private function parseSummary(string $md): string
-    {
-        // Extract the paragraph following "**Key Mosaic Insight:**"
-        if (preg_match('/\*\*Key Mosaic Insight:\*\*\s*(.+?)(?=\n\n---|\n\n##|\z)/su', $md, $m)) {
-            return trim($m[1]);
-        }
-        return 'Imported from legacy CSV.';
-    }
-
-    private function parseRedFlags(string $csvValue, ?string $md): ?array
-    {
-        if (strtoupper(trim($csvValue)) !== 'TRUE') {
-            return null;
-        }
-
-        if ($md) {
-            // Extract titles from "### 🚩 Red Flag N: Title" lines
-            preg_match_all('/###\s*🚩\s*Red Flag \d+:\s*(.+)/u', $md, $m);
-            if (!empty($m[1])) {
-                return array_map('trim', $m[1]);
-            }
-        }
-
-        return ['Red flags present — see notes'];
-    }
-
-    private function parseEvidence(string $md, int $categoryNumber): array
-    {
-        // Isolate the CATEGORY N section
-        $pattern = '/### CATEGORY ' . $categoryNumber . ':.*?\n(.*?)(?=\n---|\n### CATEGORY|\n## \d|\z)/su';
-        if (!preg_match($pattern, $md, $sectionMatch)) {
-            return [];
-        }
-
-        // Isolate the **Evidence:** block within that section
-        if (!preg_match('/\*\*Evidence:\*\*\s*\n(.*?)(?=\n\*\*[A-Z]|\z)/su', $sectionMatch[1], $evidenceMatch)) {
-            return [];
-        }
-
-        // Extract bullet lines, stripping markdown bold markers
-        $evidence = [];
-        foreach (explode("\n", $evidenceMatch[1]) as $line) {
-            $line = trim($line);
-            if (str_starts_with($line, '- ')) {
-                $evidence[] = trim(preg_replace('/\*\*(.+?)\*\*/u', '$1', substr($line, 2)));
-            }
-        }
-
-        return $evidence;
     }
 }
