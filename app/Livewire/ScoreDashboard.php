@@ -25,9 +25,10 @@ class ScoreDashboard extends Component
     public string $promptFilter   = '';
     public string $dateFrom       = '';
     public ?int   $selectedCompanyId = null;
-    public string $presetName    = '';
-    public bool   $showSaveModal = false;
-    public string $activePresetId = '';
+    public string $presetName       = '';
+    public bool   $showSaveModal   = false;
+    public string $activePresetId  = '';
+    public string $activePresetName = '';
 
     private const CATEGORY_LABELS = [
         'leadership_character'           => 'Leadership & Character',
@@ -109,7 +110,9 @@ class ScoreDashboard extends Component
     {
         $preset = WeightingPreset::find($id);
         if ($preset) {
-            $this->weights = $preset->weights;
+            $this->weights          = $preset->weights;
+            $this->activePresetName = $preset->name;
+            $this->dispatch('sync-weights', weights: $this->weights);
         }
     }
 
@@ -162,7 +165,14 @@ class ScoreDashboard extends Component
 
     public function resetWeights(): void
     {
-        $this->weights = array_fill_keys(array_keys($this->weights), 5);
+        $this->weights          = array_fill_keys(array_keys($this->weights), 5);
+        $this->activePresetName = '';
+        $this->dispatch('sync-weights', weights: $this->weights);
+    }
+
+    public function updatedWeights(): void
+    {
+        $this->activePresetName = '';
     }
 
     private function computeComposite(Collection $featureScores): float
