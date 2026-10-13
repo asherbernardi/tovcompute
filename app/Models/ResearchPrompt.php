@@ -9,7 +9,7 @@ class ResearchPrompt extends Model
 {
     public $timestamps = false;
 
-    protected $fillable = ['name', 'content', 'created_at'];
+    protected $fillable = ['name', 'content', 'comments', 'created_at'];
 
     protected $casts = ['created_at' => 'integer'];
 

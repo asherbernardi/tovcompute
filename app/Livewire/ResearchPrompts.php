@@ -16,6 +16,9 @@ class ResearchPrompts extends Component
     public bool $backfillDone       = false;
     public int $backfillCount        = 0;
 
+    public ?int $editingCommentId = null;
+    public string $commentText    = '';
+
     protected $rules = [
         'name'    => 'required|string|max:255|unique:research_prompts,name',
         'content' => 'required|string',
@@ -34,6 +37,27 @@ class ResearchPrompts extends Component
         $this->content   = '';
         $this->showForm  = false;
         $this->backfillDone = false;
+    }
+
+    public function editComment(int $promptId): void
+    {
+        $this->editingCommentId = $promptId;
+        $this->commentText = ResearchPrompt::find($promptId)?->comments ?? '';
+    }
+
+    public function saveComment(): void
+    {
+        if (!$this->editingCommentId) return;
+
+        ResearchPrompt::find($this->editingCommentId)?->update(['comments' => trim($this->commentText)]);
+        $this->editingCommentId = null;
+        $this->commentText = '';
+    }
+
+    public function cancelComment(): void
+    {
+        $this->editingCommentId = null;
+        $this->commentText = '';
     }
 
     public function backfill(): void

@@ -34,13 +34,33 @@
 
         {{-- Preset loader --}}
         @if($presets->count())
-        <select wire:model.live="activePresetId"
-                class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
-            <option value="">Load preset…</option>
-            @foreach($presets as $preset)
-                <option value="{{ $preset->id }}">{{ $preset->name }}</option>
-            @endforeach
-        </select>
+        <div x-data="{ open: false }" class="relative">
+            <button @click="open = !open" @click.outside="open = false"
+                    class="flex items-center gap-1.5 border border-gray-300 rounded px-3 py-1.5 text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                Load preset…
+                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="open" x-cloak
+                 class="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-40 py-1">
+                @foreach($presets as $preset)
+                <div class="flex items-center justify-between px-3 py-1.5 hover:bg-gray-50 gap-4">
+                    <button @click="open = false"
+                            wire:click="loadPreset({{ $preset->id }})"
+                            class="text-sm text-gray-700 text-left flex-1">
+                        {{ $preset->name }}
+                    </button>
+                    <button wire:click="deletePreset({{ $preset->id }})"
+                            class="text-gray-300 hover:text-red-500 shrink-0" title="Delete preset">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+                @endforeach
+            </div>
+        </div>
         @endif
 
         <button wire:click="resetWeights"
@@ -53,19 +73,13 @@
             Save Preset
         </button>
 
-        {{-- Preset count badge --}}
-        @if($presets->count())
-        <div class="flex gap-1">
-            @foreach($presets as $preset)
-            <span class="inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
-                {{ $preset->name }}
-                <button wire:click="deletePreset({{ $preset->id }})"
-                        class="text-gray-400 hover:text-red-500 leading-none"
-                        title="Delete preset">×</button>
-            </span>
-            @endforeach
-        </div>
+        {{-- Active preset indicator --}}
+        @if($activePresetName)
+        <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-xs font-medium px-2.5 py-1 rounded-full">
+            {{ $activePresetName }}
+        </span>
         @endif
+
     </div>
 
     {{-- Save preset modal --}}
@@ -96,17 +110,28 @@
     <div class="flex gap-6 items-start">
 
         {{-- Weight sliders --}}
-        <div class="w-64 shrink-0 bg-white shadow-md rounded-lg p-5">
+        <div class="w-72 shrink-0 bg-white shadow-md rounded-lg p-5"
+             x-data="{
+                 w: {},
+                 init() { this.w = @js($weights); },
+                 get total() { return Object.values(this.w).reduce((s, v) => s + Number(v), 0); },
+                 pct(key) { return this.total === 0 ? '0%' : Math.round(this.w[key] / this.total * 100) + '%'; }
+             }"
+             x-on:sync-weights.window="w = $event.detail.weights">
             <h3 class="font-semibold text-gray-800 mb-4 text-sm uppercase tracking-wide">Category Weights</h3>
 
             @foreach($categoryLabels as $key => $label)
             <div class="mb-4">
                 <div class="flex justify-between text-sm mb-1">
                     <span class="text-gray-700">{{ $label }}</span>
-                    <span class="font-medium text-gray-900">{{ $weights[$key] }}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-400" x-text="pct('{{ $key }}')"></span>
+                        <span class="font-medium text-gray-900 w-4 text-right" x-text="w['{{ $key }}']"></span>
+                    </div>
                 </div>
                 <input type="range" min="0" max="10" step="1"
                        wire:model.lazy="weights.{{ $key }}"
+                       @input="w['{{ $key }}'] = +$event.target.value"
                        class="w-full accent-blue-600" />
             </div>
             @endforeach
@@ -201,6 +226,7 @@
                  { match: 'claude-opus-4',      input: 15,   output: 75   },
                  { match: 'claude-sonnet-4',    input: 3,    output: 15   },
                  { match: 'claude-haiku-4',     input: 0.8,  output: 4    },
+                 { match: 'gpt-5.2',            input: 1.75, output: 14   },
                  { match: 'gpt-4o-mini',        input: 0.15, output: 0.6  },
                  { match: 'gpt-4o',             input: 2.5,  output: 10   },
                  { match: 'gpt-4',              input: 10,   output: 30   },

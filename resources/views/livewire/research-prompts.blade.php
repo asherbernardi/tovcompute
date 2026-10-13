@@ -85,8 +85,40 @@
             </svg>
         </button>
 
-        <div x-show="expanded === {{ $prompt->id }}" x-cloak class="border-t border-gray-100 px-5 py-4 bg-gray-50">
-            <pre class="text-xs text-gray-700 whitespace-pre-wrap font-mono leading-relaxed">{{ $prompt->content }}</pre>
+        <div x-show="expanded === {{ $prompt->id }}" x-cloak class="border-t border-gray-100 bg-gray-50">
+
+            {{-- Comments --}}
+            <div class="px-5 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Comments</span>
+                    @if ($editingCommentId !== $prompt->id)
+                        <button wire:click="editComment({{ $prompt->id }})"
+                                class="text-xs text-indigo-600 hover:text-indigo-800">Edit</button>
+                    @endif
+                </div>
+
+                @if ($editingCommentId === $prompt->id)
+                    <textarea wire:model="commentText" rows="4"
+                              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                              placeholder="Document when and how this prompt was used, what makes it unique, etc."></textarea>
+                    <div class="flex gap-2 mt-2">
+                        <button wire:click="saveComment"
+                                class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700">Save</button>
+                        <button wire:click="cancelComment"
+                                class="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200">Cancel</button>
+                    </div>
+                @elseif ($prompt->comments)
+                    <p class="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{{ $prompt->comments }}</p>
+                @else
+                    <p class="text-xs text-gray-400 italic">No comments yet.</p>
+                @endif
+            </div>
+
+            {{-- Prompt content --}}
+            <div class="px-5 py-4">
+                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-2">Prompt</span>
+                <pre class="text-xs text-gray-700 whitespace-pre-wrap font-mono leading-relaxed">{{ $prompt->content }}</pre>
+            </div>
         </div>
     </div>
     @empty
